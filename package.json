@@ -1,0 +1,20 @@
+{
+  "name": "open-link-in-new-tab",
+  "version": "1.0.0",
+  "description": "Browser extension to open links and selected URLs in new tabs",
+  "scripts": {
+    "build": "tsc && webpack --mode=production",
+    "dev": "webpack --watch --mode=development",
+    "lint": "eslint --ext .ts ."
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.253",
+    "copy-webpack-plugin": "^11.0.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.3.3",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "author": "",
+  "license": "MIT"
+} 

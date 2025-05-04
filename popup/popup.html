@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Open Link in New Tab</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Open Link in New Tab</h1>
+    
+    <div class="settings-section">
+      <div class="setting-item">
+        <label class="toggle">
+          <input type="checkbox" id="enableExtension" checked>
+          <span class="slider"></span>
+        </label>
+        <div class="setting-label">
+          <span>Enable Extension</span>
+          <p class="setting-description">Toggle extension functionality on/off</p>
+        </div>
+      </div>
+
+      <div class="setting-item">
+        <label class="toggle">
+          <input type="checkbox" id="directLinkOpen" checked>
+          <span class="slider"></span>
+        </label>
+        <div class="setting-label">
+          <span>Direct Link Opening</span>
+          <p class="setting-description">Open links immediately on right-click without showing context menu</p>
+        </div>
+      </div>
+
+      <div class="setting-item">
+        <label class="toggle">
+          <input type="checkbox" id="activateTabs" checked>
+          <span class="slider"></span>
+        </label>
+        <div class="setting-label">
+          <span>Activate New Tabs</span>
+          <p class="setting-description">Switch to new tabs after opening them</p>
+        </div>
+      </div>
+      
+      <div class="setting-item">
+        <label class="toggle">
+          <input type="checkbox" id="supportMultipleUrls" checked>
+          <span class="slider"></span>
+        </label>
+        <div class="setting-label">
+          <span>Support Multiple URLs</span>
+          <p class="setting-description">Open multiple URLs from selected text</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="exclusion-section">
+      <h2>Excluded Domains</h2>
+      <p>URLs from these domains will not be opened (one per line)</p>
+      <textarea id="excludedDomains" placeholder="example.com&#10;another-example.com"></textarea>
+      <button id="saveExclusions">Save Exclusions</button>
+      <p id="saveStatus" class="save-status"></p>
+    </div>
+
+    <div class="footer">
+      <span class="version">v1.0.1</span>
+      <button id="resetSettings">Reset to Defaults</button>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html> 

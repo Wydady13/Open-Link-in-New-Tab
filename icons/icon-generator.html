@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Generate Extension Icons</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+    .icon-container {
+      margin: 20px 0;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+    }
+    .icon {
+      width: 128px;
+      height: 128px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 64px;
+      background-color: #4285f4;
+      color: white;
+      border-radius: 20%;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    .size-16 {
+      width: 16px;
+      height: 16px;
+      font-size: 10px;
+      border-radius: 3px;
+    }
+    .size-48 {
+      width: 48px;
+      height: 48px;
+      font-size: 24px;
+      border-radius: 8px;
+    }
+    button {
+      padding: 10px 15px;
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    .instructions {
+      max-width: 600px;
+      margin: 0 auto;
+      text-align: left;
+      background-color: #f5f5f5;
+      padding: 15px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Extension Icon Generator</h1>
+  <p>Right-click and save each icon as a PNG file</p>
+  
+  <div class="icon-container">
+    <div>
+      <div class="icon size-16" id="icon16">🔗</div>
+      <p>icon16.png</p>
+    </div>
+    <div>
+      <div class="icon size-48" id="icon48">🔗</div>
+      <p>icon48.png</p>
+    </div>
+    <div>
+      <div class="icon" id="icon128">🔗</div>
+      <p>icon128.png</p>
+    </div>
+  </div>
+  
+  <div class="instructions">
+    <h3>Instructions:</h3>
+    <ol>
+      <li>Open this file in a browser</li>
+      <li>For each icon size, right-click the icon and select "Save image as..."</li>
+      <li>Save with the corresponding filename (icon16.png, icon48.png, icon128.png)</li>
+      <li>Place all saved icons in the "icons" folder of your extension</li>
+    </ol>
+    <p><strong>Note:</strong> For a production extension, you should use professionally designed icons instead.</p>
+  </div>
+  
+  <script>
+    // Future enhancement: Add functionality to download all icons at once
+  </script>
+</body>
+</html> 
