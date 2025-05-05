@@ -1,4 +1,4 @@
-# Open Link in New Tab Extension
+# Open Link in New Tab Extension (v1.1.0)
 
 A powerful browser extension that adds right-click functionality to open links and selected URLs in a new background tab. Built with TypeScript for Chrome and Firefox.
 
@@ -11,6 +11,9 @@ A powerful browser extension that adds right-click functionality to open links a
 - **Tab Behavior Control**: Choose whether new tabs should be activated or remain in the background
 - **Smart URL Handling**: Automatically adds https:// to URLs if no protocol is specified
 - **Support for Special URLs**: Works with localhost and file:// links
+- **Advanced Configuration**: Fine-tune click detection and URL recognition settings
+- **Import/Export Capabilities**: Easily transfer your domain exclusion lists between devices
+- **Debug Mode**: Troubleshoot issues with detailed console logging
 
 ## Installation
 
@@ -63,11 +66,23 @@ A powerful browser extension that adds right-click functionality to open links a
 
 Click the extension icon in your browser toolbar to access settings:
 
+#### Basic Settings
 - **Enable Extension**: Turn the extension on or off
 - **Direct Link Opening**: Open links immediately on right-click without showing a context menu
 - **Activate New Tabs**: Automatically switch to new tabs when opened
 - **Support Multiple URLs**: Enable opening multiple URLs from selected text
-- **Excluded Domains**: Specify domains that should not be opened by the extension
+
+#### Domain Exclusions
+- Specify domains that should not be opened by the extension
+- **Add Current Domain**: Quickly add the current website to the exclusion list
+- **Import/Export**: Transfer your exclusion lists between devices
+
+#### Advanced Settings
+- **Debounce Threshold**: Control the delay between consecutive link openings (100-1000ms)
+- **Click Distance Threshold**: Set how much the mouse can move and still count as a click (1-20px)
+- **Click Time Threshold**: Adjust the maximum time window for a click event (100-1000ms)
+- **URL Detection Sensitivity**: Choose between strict, standard, or relaxed URL patterns
+- **Debug Mode**: Enable detailed console logging for troubleshooting
 
 ## Development
 
@@ -79,7 +94,8 @@ extension/
 ├── background.ts      # Background service worker
 ├── contentScript.ts   # Content script for webpage interaction
 ├── utils/
-│   └── urlChecker.ts  # URL validation utilities
+│   ├── urlChecker.ts  # URL validation utilities
+│   └── browserAPI.ts  # Cross-browser compatibility layer
 ├── popup/
 │   ├── popup.html     # Settings popup HTML
 │   ├── popup.css      # Popup styles
@@ -98,9 +114,21 @@ extension/
 ## Troubleshooting
 
 - **Extension not working**: Make sure it's enabled in the popup settings
-- **Link opening multiple times**: This can happen with certain page configurations. Try reloading the page.
-- **URLs not being detected**: Make sure the text is properly selected and contains a valid URL
+- **Link opening multiple times**: This can happen with certain page configurations. Try reloading the page or adjust the debounce threshold
+- **URLs not being detected**: Try adjusting the URL Detection Sensitivity in advanced settings
 - **Links not opening immediately**: Check if direct link opening is enabled in the settings
+- **Accidental openings**: Increase the Click Distance or Time Threshold in advanced settings
+
+## Recent Changes (v1.1.0)
+
+- Added advanced settings panel for fine-tuning extension behavior
+- Improved URL detection with configurable sensitivity levels
+- Added ability to import/export domain exclusion lists
+- Added "Add Current Domain" shortcut button
+- Fixed browser compatibility issues
+- Added animation effects to the settings UI
+- Fixed TypeScript typing issues for better code quality
+- Enhanced error handling and debugging capabilities
 
 ## Future Plans
 
@@ -108,6 +136,7 @@ extension/
 - Implement domain groups for better organization of exclusions
 - Add dark mode support for the popup interface
 - Improve performance on large pages
+- Add browser sync support for settings
 
 ## Contributing
 

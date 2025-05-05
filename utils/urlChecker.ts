@@ -1,19 +1,37 @@
 /**
  * Checks if a string looks like a valid URL
  * Accepts patterns like: example.com, www.example.com, https://example.com
+ * 
+ * @param text The text to check
+ * @param patternType The pattern sensitivity: 'strict', 'standard', or 'relaxed'
  */
-export function isValidUrl(text: string): boolean {
+export function isValidUrl(text: string, patternType: string = 'standard'): boolean {
   // Trim whitespace and check if empty
   const trimmedText = text.trim();
   if (!trimmedText) {
     return false;
   }
 
-  // URL regex pattern
-  // Matches domains like example.com, www.example.com, sub.example.co.uk
-  // Also matches URLs with protocols like http://, https://, file://
-  // Supports localhost and IP addresses
-  const urlPattern = /^(https?:\/\/|file:\/\/|www\.)?(localhost|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|[a-zA-Z0-9][-a-zA-Z0-9]*(\.[a-zA-Z0-9][-a-zA-Z0-9]*)+)(:\d+)?(\/[^/\s]*)*/i;
+  // Choose URL regex pattern based on pattern type
+  let urlPattern: RegExp;
+  
+  switch (patternType) {
+    case 'strict':
+      // Strict pattern - only matches well-formed URLs with common TLDs
+      urlPattern = /^(https?:\/\/|file:\/\/|www\.)([-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6})\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/i;
+      break;
+      
+    case 'relaxed':
+      // Relaxed pattern - catches more potential URLs including single-word domains
+      urlPattern = /^(https?:\/\/|file:\/\/|www\.)?([a-zA-Z0-9][-a-zA-Z0-9]*(\.[a-zA-Z0-9][-a-zA-Z0-9]*)*|localhost|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(:\d+)?(\/[^/\s]*)*$/i;
+      break;
+      
+    case 'standard':
+    default:
+      // Standard pattern (default) - balanced approach
+      urlPattern = /^(https?:\/\/|file:\/\/|www\.)?(localhost|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|[a-zA-Z0-9][-a-zA-Z0-9]*(\.[a-zA-Z0-9][-a-zA-Z0-9]*)+)(:\d+)?(\/[^/\s]*)*/i;
+      break;
+  }
   
   return urlPattern.test(trimmedText);
 }
@@ -40,8 +58,11 @@ export function normalizeUrl(url: string): string {
 
 /**
  * Extracts multiple URLs from text (separated by newlines)
+ * 
+ * @param text The text to extract URLs from
+ * @param patternType The pattern sensitivity: 'strict', 'standard', or 'relaxed'
  */
-export function extractUrls(text: string): string[] {
+export function extractUrls(text: string, patternType: string = 'standard'): string[] {
   const lines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line);
-  return lines.filter(isValidUrl).map(normalizeUrl);
+  return lines.filter(line => isValidUrl(line, patternType)).map(normalizeUrl);
 } 

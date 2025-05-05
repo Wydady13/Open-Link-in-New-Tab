@@ -58,13 +58,85 @@
     <div class="exclusion-section">
       <h2>Excluded Domains</h2>
       <p>URLs from these domains will not be opened (one per line)</p>
+      
+      <div class="domain-actions">
+        <button id="addCurrentDomain" class="action-button">Add Current Domain</button>
+        <div class="import-export-buttons">
+          <button id="exportDomains" class="action-button">Export</button>
+          <button id="importDomains" class="action-button">Import</button>
+          <input type="file" id="importFile" accept=".txt" style="display: none;">
+        </div>
+      </div>
+      
       <textarea id="excludedDomains" placeholder="example.com&#10;another-example.com"></textarea>
+      <div id="domainValidationFeedback" class="validation-feedback"></div>
+      
       <button id="saveExclusions">Save Exclusions</button>
       <p id="saveStatus" class="save-status"></p>
     </div>
 
+    <div class="advanced-section">
+      <div class="advanced-header">
+        <h2>Advanced Settings</h2>
+        <button id="toggleAdvanced" class="toggle-button">Show</button>
+      </div>
+      
+      <div id="advancedSettings" class="advanced-content hidden">
+        <div class="advanced-item">
+          <label for="debounceThreshold">Debounce Threshold (ms):</label>
+          <div class="slider-container">
+            <input type="range" id="debounceThreshold" min="100" max="1000" step="50" value="500">
+            <span id="debounceValue">500</span>
+          </div>
+          <p class="setting-description">Minimum time between consecutive link openings</p>
+        </div>
+        
+        <div class="advanced-item">
+          <label for="clickDistanceThreshold">Click Distance Threshold (px):</label>
+          <div class="slider-container">
+            <input type="range" id="clickDistanceThreshold" min="1" max="20" step="1" value="5">
+            <span id="distanceValue">5</span>
+          </div>
+          <p class="setting-description">Maximum mouse movement to still count as a click</p>
+        </div>
+        
+        <div class="advanced-item">
+          <label for="clickTimeThreshold">Click Time Threshold (ms):</label>
+          <div class="slider-container">
+            <input type="range" id="clickTimeThreshold" min="100" max="1000" step="50" value="300">
+            <span id="timeValue">300</span>
+          </div>
+          <p class="setting-description">Maximum time for a click to be registered</p>
+        </div>
+        
+        <div class="advanced-item">
+          <label class="toggle">
+            <input type="checkbox" id="debugMode">
+            <span class="slider"></span>
+          </label>
+          <div class="setting-label">
+            <span>Debug Mode</span>
+            <p class="setting-description">Enable console logging for troubleshooting</p>
+          </div>
+        </div>
+        
+        <div class="advanced-item">
+          <label for="urlPatternSelection">URL Detection Sensitivity:</label>
+          <select id="urlPatternSelection" class="select-dropdown">
+            <option value="strict">Strict (fewer false positives)</option>
+            <option value="standard" selected>Standard</option>
+            <option value="relaxed">Relaxed (catch more potential URLs)</option>
+          </select>
+          <p class="setting-description">How aggressively to detect text as URLs</p>
+        </div>
+        
+        <button id="saveAdvanced" class="save-button">Save Advanced Settings</button>
+        <p id="advancedSaveStatus" class="save-status"></p>
+      </div>
+    </div>
+
     <div class="footer">
-      <span class="version">v1.0.1</span>
+      <span class="version">v1.1.0</span>
       <button id="resetSettings">Reset to Defaults</button>
     </div>
   </div>

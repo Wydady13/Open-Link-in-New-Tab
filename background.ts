@@ -4,6 +4,8 @@ import { browserAPI, isFirefox, safeBrowserCall, getStorage, setStorage } from '
 // Menu item constants
 const MENU_ID = 'openLinkInNewTab';
 const MENU_TITLE = '🔗 Open Link in New Tab';
+const MULTI_URL_MENU_ID = 'openMultipleUrls';
+const MULTI_URL_MENU_TITLE = '🔗🔗 Open Multiple URLs';
 
 // Extension settings with defaults
 const settings: {
@@ -12,12 +14,24 @@ const settings: {
   supportMultipleUrls: boolean;
   excludedDomains: string[];
   directLinkOpen: boolean;
+  // Advanced settings
+  debounceThreshold: number;
+  clickDistanceThreshold: number;
+  clickTimeThreshold: number;
+  debugMode: boolean;
+  urlPatternType: string;
 } = {
   enableExtension: true,
   activateTabs: false,
   supportMultipleUrls: true,
   excludedDomains: [],
-  directLinkOpen: true
+  directLinkOpen: true,
+  // Advanced settings with defaults
+  debounceThreshold: 500,
+  clickDistanceThreshold: 5,
+  clickTimeThreshold: 300,
+  debugMode: false,
+  urlPatternType: 'standard'
 };
 
 // Queue for opening URLs to prevent race conditions
@@ -25,13 +39,24 @@ let openingQueue: string[] = [];
 let isProcessingQueue = false;
 let previousEnableState = true;
 
-// Create context menu item when extension is installed or updated
+// Track processed request IDs to prevent duplicates
+const processedRequestIds = new Set<string>();
+const REQUEST_ID_EXPIRY = 2000; // ms - time to keep request IDs in memory
+
+// Create context menu items when extension is installed or updated
 browserAPI.runtime.onInstalled.addListener(() => {
-  // Create context menu
+  // Create single link context menu
   browserAPI.contextMenus.create({
     id: MENU_ID,
     title: MENU_TITLE,
     contexts: ['link', 'selection']
+  });
+  
+  // Create multiple URLs context menu
+  browserAPI.contextMenus.create({
+    id: MULTI_URL_MENU_ID,
+    title: MULTI_URL_MENU_TITLE,
+    contexts: ['selection']
   });
 
   // Initialize settings
@@ -45,7 +70,13 @@ function loadSettings(): void {
     activateTabs: false,
     supportMultipleUrls: true,
     excludedDomains: [],
-    directLinkOpen: true  // Default to true for direct link opening
+    directLinkOpen: true,  // Default to true for direct link opening
+    // Advanced settings
+    debounceThreshold: 500,
+    clickDistanceThreshold: 5,
+    clickTimeThreshold: 300,
+    debugMode: false,
+    urlPatternType: 'standard'
   }, (items) => {
     // Track previous enable state before updating
     previousEnableState = settings.enableExtension;
@@ -58,6 +89,11 @@ function loadSettings(): void {
       clearOpeningQueue();
     }
     
+    // Configure debugging based on settings
+    if (settings.debugMode) {
+      console.log('Loaded settings:', settings);
+    }
+    
     updateContextMenu();
   });
 }
@@ -66,8 +102,14 @@ function loadSettings(): void {
 function updateContextMenu(): void {
   // Update menu visibility based on whether extension is enabled
   try {
+    // Update main context menu item
     browserAPI.contextMenus.update(MENU_ID, {
       visible: settings.enableExtension && !settings.directLinkOpen // Hide menu if direct open is enabled
+    });
+    
+    // Update multiple URLs context menu item
+    browserAPI.contextMenus.update(MULTI_URL_MENU_ID, {
+      visible: settings.enableExtension && settings.supportMultipleUrls
     });
   } catch (error) {
     // Some browsers might not fully support this API
@@ -84,29 +126,64 @@ function clearOpeningQueue(): void {
 
 // Handle context menu item click
 browserAPI.contextMenus.onClicked.addListener((info, tab) => {
-  if (!tab?.id || info.menuItemId !== MENU_ID || !settings.enableExtension) return;
+  if (!tab?.id || !settings.enableExtension) return;
 
-  if (info.linkUrl) {
-    // Handle clicked link
-    const url = info.linkUrl;
-    
-    if (!isExcludedDomain(url)) {
-      queueUrlForOpening(url);
+  // Handle single link opening
+  if (info.menuItemId === MENU_ID) {
+    if (info.linkUrl) {
+      // Handle clicked link
+      const url = info.linkUrl;
+      
+      if (!isExcludedDomain(url)) {
+        queueUrlForOpening(url);
+      }
+    } else if (info.selectionText && settings.supportMultipleUrls) {
+      // Handle selected text (if multiple URLs support is enabled)
+      const selectedText = info.selectionText.trim();
+      
+      // Extract and open URLs
+      openMultipleUrls(selectedText);
     }
-  } else if (info.selectionText && settings.supportMultipleUrls) {
-    // Handle selected text (if multiple URLs support is enabled)
+  }
+  // Handle multiple URLs opening
+  else if (info.menuItemId === MULTI_URL_MENU_ID && info.selectionText) {
     const selectedText = info.selectionText.trim();
     
-    // Check for multiple URLs (separated by newlines)
-    const urls = extractUrls(selectedText);
-    
-    if (urls.length > 0) {
-      // Open all valid, non-excluded URLs in new tabs
-      urls.filter(url => !isExcludedDomain(url))
-          .forEach(url => queueUrlForOpening(url));
+    // For better user experience, notify the content script first
+    // This allows the content script to highlight the selection or provide visual feedback
+    if (tab.id) {
+      browserAPI.tabs.sendMessage(tab.id, {
+        action: 'openMultipleFromSelection',
+        text: selectedText
+      }).catch(error => {
+        // If sending to content script fails (e.g., not loaded), open directly
+        console.log('Could not send to content script, opening directly:', error);
+        openMultipleUrls(selectedText);
+      });
+    } else {
+      // Fallback if tab ID is not available
+      openMultipleUrls(selectedText);
     }
   }
 });
+
+/**
+ * Process text and open all valid URLs found - with URL pattern sensitivity
+ */
+function openMultipleUrls(text: string): void {
+  // Check for multiple URLs with appropriate URL pattern sensitivity
+  const urls = extractUrls(text, settings.urlPatternType);
+  
+  if (urls.length > 0) {
+    if (settings.debugMode) {
+      console.log(`Found ${urls.length} URLs in text with pattern type ${settings.urlPatternType}`);
+    }
+    
+    // Open all valid, non-excluded URLs in new tabs
+    urls.filter(url => !isExcludedDomain(url))
+        .forEach(url => queueUrlForOpening(url));
+  }
+}
 
 // Check if a URL is from an excluded domain
 function isExcludedDomain(url: string): boolean {
@@ -114,9 +191,13 @@ function isExcludedDomain(url: string): boolean {
     if (!settings.excludedDomains.length) return false;
     
     const hostname = new URL(url).hostname;
+    // Normalize domain by removing www. prefix for comparison
+    const normalizedHostname = hostname.replace(/^www\./, '');
+    
     return settings.excludedDomains.some(domain => {
+      // Normalize each excluded domain by removing www. prefix
       const cleanDomain = domain.replace(/^www\./, '');
-      return hostname === cleanDomain || hostname.endsWith('.' + cleanDomain);
+      return normalizedHostname === cleanDomain || normalizedHostname.endsWith('.' + cleanDomain);
     });
   } catch (e) {
     console.error('Error checking excluded domain:', e);
@@ -165,11 +246,7 @@ browserAPI.runtime.onMessage.addListener((message, sender, sendResponse) => {
     
     if (directOpen && settings.supportMultipleUrls) {
       // If direct open is enabled and text is valid URL, open it
-      const urls = extractUrls(message.text);
-      if (urls.length > 0) {
-        urls.filter(url => !isExcludedDomain(url))
-            .forEach(url => queueUrlForOpening(url));
-      }
+      openMultipleUrls(message.text);
     }
     
     sendResponse({ 
@@ -177,23 +254,73 @@ browserAPI.runtime.onMessage.addListener((message, sender, sendResponse) => {
       directOpen: directOpen
     });
   } 
+  // Handle opening multiple URLs from selection
+  else if (message.action === 'openMultipleUrls' && message.text) {
+    if (settings.enableExtension && settings.supportMultipleUrls) {
+      openMultipleUrls(message.text);
+      sendResponse({ success: true });
+    } else {
+      sendResponse({ success: false });
+    }
+  }
   // Check if we should directly open a link on right-click
   else if (message.action === 'shouldOpenLink' || message.action === 'directLinkClick') {
     const shouldIntercept = settings.enableExtension && settings.directLinkOpen;
     
-    if (shouldIntercept && !isExcludedDomain(message.url)) {
-      // Open the link directly if not excluded
-      queueUrlForOpening(message.url);
+    // For shouldOpenLink action, just return if we should intercept without opening
+    if (message.action === 'shouldOpenLink') {
+      sendResponse({ 
+        shouldIntercept: shouldIntercept
+      });
+      return;
     }
     
+    // For directLinkClick, actually open the URL if appropriate
+    if (shouldIntercept && !isExcludedDomain(message.url)) {
+      // Queue the URL for opening
+      queueUrlForOpening(message.url);
+      
+      // Respond that we've handled it
+      sendResponse({ 
+        shouldOpen: true,
+        shouldIntercept: shouldIntercept
+      });
+      return;
+    }
+    
+    // Default response
     sendResponse({ 
-      shouldOpen: shouldIntercept,
+      shouldOpen: false,
       shouldIntercept: shouldIntercept
     });
   } 
   // Get the current extension enabled state
   else if (message.action === 'getExtensionState') {
     sendResponse({ enabled: settings.enableExtension });
+  }
+  // Get advanced settings for content script
+  else if (message.action === 'getAdvancedSettings') {
+    sendResponse({
+      debounceThreshold: settings.debounceThreshold,
+      clickDistanceThreshold: settings.clickDistanceThreshold,
+      clickTimeThreshold: settings.clickTimeThreshold,
+      debugMode: settings.debugMode,
+      urlPatternType: settings.urlPatternType
+    });
+  }
+  // Return the current domain for the addCurrentDomain feature
+  else if (message.action === 'getCurrentDomain') {
+    // This is used by the popup to get the current tab's domain
+    if (sender.tab && sender.tab.url) {
+      try {
+        const url = new URL(sender.tab.url);
+        sendResponse({ domain: url.hostname });
+      } catch (e) {
+        sendResponse({ error: 'Invalid URL' });
+      }
+    } else {
+      sendResponse({ error: 'No active tab' });
+    }
   }
   // Handle settings updates
   else if (message.action === 'settingsUpdated') {
@@ -207,7 +334,25 @@ browserAPI.runtime.onMessage.addListener((message, sender, sendResponse) => {
         typeof message.settings.enableExtension !== 'undefined' && 
         message.settings.enableExtension !== settings.enableExtension;
       
+      // Check if advanced settings are changing
+      const advancedSettingsChanging = 
+        (typeof message.settings.debounceThreshold !== 'undefined' && 
+        message.settings.debounceThreshold !== settings.debounceThreshold) ||
+        (typeof message.settings.clickDistanceThreshold !== 'undefined' && 
+        message.settings.clickDistanceThreshold !== settings.clickDistanceThreshold) ||
+        (typeof message.settings.clickTimeThreshold !== 'undefined' && 
+        message.settings.clickTimeThreshold !== settings.clickTimeThreshold) ||
+        (typeof message.settings.debugMode !== 'undefined' && 
+        message.settings.debugMode !== settings.debugMode) ||
+        (typeof message.settings.urlPatternType !== 'undefined' && 
+        message.settings.urlPatternType !== settings.urlPatternType);
+      
       Object.assign(settings, message.settings);
+      
+      // Log changes if debug mode is enabled
+      if (settings.debugMode) {
+        console.log('Settings updated:', settings);
+      }
       
       // If extension was disabled, clear the queue
       if (!settings.enableExtension && previousEnableState) {
@@ -217,6 +362,11 @@ browserAPI.runtime.onMessage.addListener((message, sender, sendResponse) => {
       // Notify content scripts about the state change if needed
       if (enableStateChanging) {
         notifyExtensionStateChange();
+      }
+      
+      // Notify content scripts about advanced settings changes if needed
+      if (advancedSettingsChanging) {
+        notifyAdvancedSettingsChange();
       }
       
       updateContextMenu();
@@ -241,6 +391,34 @@ function notifyExtensionStateChange(): void {
           browserAPI.tabs.sendMessage(tab.id, {
             action: 'extensionStateChanged',
             enabled: settings.enableExtension
+          }).catch(() => {
+            // Ignore errors - content script might not be loaded on some tabs
+          });
+        } catch (e) {
+          // Ignore errors in some browsers
+        }
+      }
+    });
+  });
+}
+
+/**
+ * Notify all content scripts about advanced settings changes
+ */
+function notifyAdvancedSettingsChange(): void {
+  browserAPI.tabs.query({}, (tabs) => {
+    tabs.forEach(tab => {
+      if (tab.id) {
+        try {
+          browserAPI.tabs.sendMessage(tab.id, {
+            action: 'advancedSettingsUpdated',
+            settings: {
+              debounceThreshold: settings.debounceThreshold,
+              clickDistanceThreshold: settings.clickDistanceThreshold,
+              clickTimeThreshold: settings.clickTimeThreshold,
+              debugMode: settings.debugMode,
+              urlPatternType: settings.urlPatternType
+            }
           }).catch(() => {
             // Ignore errors - content script might not be loaded on some tabs
           });
