@@ -15,7 +15,6 @@ All notable changes to the "Open Link in New Tab" extension will be documented i
 - Import/export functionality for domain exclusion lists
 - "Add Current Domain" button for quick exclusion
 - Improved TypeScript type safety
-- GitHub workflow for automated builds and linting
 
 ### Fixed
 - Browser compatibility issues between Chrome and Firefox

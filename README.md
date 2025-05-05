@@ -109,7 +109,6 @@ extension/
 
 - `npm run dev`: Start development mode with automatic rebuilding
 - `npm run build`: Build the extension for production
-- `npm run lint`: Lint the codebase
 
 ## Troubleshooting
 
